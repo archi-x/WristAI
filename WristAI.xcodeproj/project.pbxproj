@@ -1,0 +1,349 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* ===== PBXProject ===== */
+		8A000001 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 8A000002 /* Build configuration list for PBXProject */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = "en";
+			hasScannedForEncodings = 0;
+			knownRegions = ("en", "zh-Hans", Base);
+			mainGroup = 8A000010 /* Main Group */;
+			packageReferences = (
+			);
+			productRefGroup = 8A000020 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8A100001 /* WristAI Watch App */,
+				8A200001 /* WristAI */,
+			);
+		};
+
+/* ===== Build Configuration List for Project ===== */
+		8A000002 /* Build configuration list for PBXProject */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A000003 /* Debug */,
+				8A000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8A000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)");
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		8A000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+
+/* ===== Main Group ===== */
+		8A000010 /* Main Group */ = {
+			isa = PBXGroup;
+			children = (
+				8A100010 /* WristAI Watch App Group */,
+				8A200010 /* WristAI Group */,
+				8A000020 /* Products */,
+			);
+		};
+		8A100010 /* WristAI Watch App Group */ = {
+			isa = PBXGroup;
+			children = (
+				8A100011 /* WristAI Watch App */,
+			);
+		};
+		8A100011 /* WristAI Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8A100012 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			path = "WristAI Watch App";
+			sourceTree = "<group>";
+		};
+		8A100012 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+			);
+			target = 8A100001 /* WristAI Watch App */;
+		};
+		8A200010 /* WristAI Group */ = {
+			isa = PBXGroup;
+			children = (
+				8A200011 /* WristAI */,
+			);
+		};
+		8A200011 /* WristAI */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8A200012 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			path = WristAI;
+			sourceTree = "<group>";
+		};
+		8A200012 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+			);
+			target = 8A200001 /* WristAI */;
+		};
+
+/* ===== Products ===== */
+		8A000020 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8A100003 /* WristAI Watch App.app */,
+				8A200003 /* WristAI.app */,
+			);
+		};
+
+/* ===== WristAI Watch App Target ===== */
+		8A100001 /* WristAI Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A100004 /* Build configuration list for WristAI Watch App */;
+			buildPhases = (
+				8A100005 /* Sources */,
+				8A100006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "WristAI Watch App";
+			productName = "WristAI Watch App";
+			productReference = 8A100003 /* WristAI Watch App.app */;
+			productType = "com.apple.product-type.application.watchapp2";
+		};
+		8A100003 /* WristAI Watch App.app */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			includeInIndex = 0;
+			path = "WristAI Watch App.app";
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		8A100004 /* Build configuration list for WristAI Watch App */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A100007 /* Debug */,
+				8A100008 /* Release */,
+			);
+			defaultConfigurationName = Debug;
+		};
+		8A100005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A100006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A100007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = WristAI;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "WristAI needs microphone access to record your voice notes.";
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKWatchOnly = YES;
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "-disable-sandbox";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tal.wristai.watch";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		8A100008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = WristAI;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "WristAI needs microphone access to record your voice notes.";
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKWatchOnly = YES;
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "-disable-sandbox";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tal.wristai.watch";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+
+/* ===== WristAI (iOS companion) Target ===== */
+		8A200001 /* WristAI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A200004 /* Build configuration list for WristAI */;
+			buildPhases = (
+				8A200005 /* Sources */,
+				8A200006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WristAI;
+			packageProductDependencies = (
+			);
+			productName = WristAI;
+			productReference = 8A200003 /* WristAI.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8A200003 /* WristAI.app */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			includeInIndex = 0;
+			path = WristAI.app;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		8A200004 /* Build configuration list for WristAI */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A200007 /* Debug */,
+				8A200008 /* Release */,
+			);
+			defaultConfigurationName = Debug;
+		};
+		8A200005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A200006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A200007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = WristAI;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "WristAI needs microphone access to transcribe and process your recordings.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "WristAI uses speech recognition to transcribe your voice notes on device.";
+				INFOPLIST_KEYUIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEYUILaunchScreen_Generation = YES;
+				INFOPLIST_KEYUISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "-disable-sandbox";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tal.wristai";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8A200008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_FONT_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = WristAI;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "WristAI needs microphone access to transcribe and process your recordings.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "WristAI uses speech recognition to transcribe your voice notes on device.";
+				INFOPLIST_KEYUIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEYUILaunchScreen_Generation = YES;
+				INFOPLIST_KEYUISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "-disable-sandbox";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tal.wristai";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* ===== End ===== */
+
+	};
+	rootObject = 8A000001 /* Project object */;
+}

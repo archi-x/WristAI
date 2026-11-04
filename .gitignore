@@ -1,0 +1,21 @@
+# Build artifacts
+build/
+DerivedData/
+/tmp/WristAI-DD/
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Package.resolved
+
+# Third-party clones (not part of this repo)
+argmax-oss-swift/
+
+# macOS
+.DS_Store
