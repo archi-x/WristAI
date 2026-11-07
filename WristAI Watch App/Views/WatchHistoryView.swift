@@ -1,90 +1,148 @@
 import SwiftUI
 
 struct WatchHistoryView: View {
-    @State private var recordings: [WatchRecordingMeta] = []
+    @Environment(RecordingStore.self) private var store
+    @Environment(WatchPlayer.self) private var player
 
     var body: some View {
         NavigationStack {
             List {
-                if recordings.isEmpty {
-                    VStack(spacing: 8) {
-                        Image(systemName: "waveform")
-                            .font(.title3)
-                            .foregroundStyle(.secondary)
-                        Text("还没有录音")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("在上一页点按红色按钮开始")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowBackground(Color.clear)
+                if store.recordings.isEmpty {
+                    emptyState
                 } else {
-                    ForEach(recordings) { rec in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Image(systemName: "iphone.gen3")
-                                    .foregroundStyle(.orange)
-                                    .font(.caption2)
-                                Text(formatDate(rec.createdAt))
-                                    .font(.caption2.weight(.medium))
+                    ForEach(store.recordings) { rec in
+                        row(for: rec)
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    delete(rec)
+                                } label: {
+                                    Label("删除", systemImage: "trash")
+                                }
                             }
-                            Text(formatDuration(rec.duration))
-                                .font(.caption2.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
-                        .swipeActions {
-                            Button(role: .destructive) {
-                                deleteRecording(rec)
-                            } label: {
-                                Label("删除", systemImage: "trash")
-                            }
-                        }
                     }
+
+                    Text("共 \(store.recordings.count) 条 · \(AudioFileMeta.formatBytes(store.totalBytes))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowBackground(Color.clear)
                 }
             }
             .navigationTitle("录音列表")
         }
-        .onAppear { reload() }
+        .task { store.loadRecordings() }
     }
 
-    private func reload() {
-        let raw = UserDefaults.standard.array(forKey: "watchRecordings") as? [[String: Any]] ?? []
-        recordings = raw.compactMap { dict in
-            guard let fileName = dict["fileName"] as? String,
-                  let createdAt = dict["createdAt"] as? TimeInterval,
-                  let duration = dict["duration"] as? TimeInterval else { return nil }
-            return WatchRecordingMeta(fileName: fileName, createdAt: Date(timeIntervalSince1970: createdAt), duration: duration)
-        }.sorted { $0.createdAt > $1.createdAt }
+    // MARK: - Empty State
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "waveform")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            Text("还没有录音")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("在上一页点按红色按钮开始")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .listRowBackground(Color.clear)
     }
 
-    private func deleteRecording(_ rec: WatchRecordingMeta) {
-        let raw = UserDefaults.standard.array(forKey: "watchRecordings") as? [[String: Any]] ?? []
-        let filtered = raw.filter { ($0["fileName"] as? String) != rec.fileName }
-        UserDefaults.standard.set(filtered, forKey: "watchRecordings")
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Recordings")
-        let fileURL = dir.appendingPathComponent(rec.fileName)
-        try? FileManager.default.removeItem(at: fileURL)
-        reload()
+    // MARK: - Row
+
+    @ViewBuilder
+    private func row(for rec: WatchRecording) -> some View {
+        let isCurrent = player.currentFileName == rec.fileName
+        let isPlaying = isCurrent && player.isPlaying
+
+        Button {
+            player.toggle(url: rec.fileURL)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(isCurrent ? Color.green : Color.accentColor)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 4) {
+                            Label(formatDate(rec.createdAt), systemImage: "clock")
+                                .font(.caption2.weight(.medium))
+                                .labelStyle(.titleAndIcon)
+                                .lineLimit(1)
+
+                            Spacer(minLength: 2)
+
+                            Text(rec.formatLabel)
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color.accentColor)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(
+                                    Capsule().fill(Color.accentColor.opacity(0.22))
+                                )
+                        }
+
+                        HStack(spacing: 4) {
+                            Text(isCurrent
+                                 ? "\(formatDuration(player.currentTime)) / \(rec.displayDuration)"
+                                 : rec.displayDuration)
+                                .monospacedDigit()
+
+                            Text("·")
+                                .foregroundStyle(.tertiary)
+
+                            Text(rec.displayFileSize)
+                                .monospacedDigit()
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                if isCurrent && player.duration > 0 {
+                    ProgressView(value: player.progress)
+                        .progressViewStyle(.linear)
+                        .tint(.green)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Actions
+
+    private func delete(_ rec: WatchRecording) {
+        player.handleDeleted(fileName: rec.fileName)
+        store.deleteRecording(named: rec.fileName)
     }
 
     private func formatDuration(_ interval: TimeInterval) -> String {
-        let total = Int(interval)
+        let total = max(0, Int(interval))
         return String(format: "%02d:%02d", total / 60, total % 60)
     }
 
     private func formatDate(_ date: Date) -> String {
+        let cal = Calendar.current
         let f = DateFormatter()
-        f.dateFormat = "MM/dd HH:mm"
+        f.locale = Locale(identifier: "zh_CN")
+
+        if cal.isDateInToday(date) {
+            f.dateFormat = "今天 HH:mm"
+        } else if cal.isDateInYesterday(date) {
+            f.dateFormat = "昨天 HH:mm"
+        } else if cal.isDate(date, equalTo: Date(), toGranularity: .year) {
+            f.dateFormat = "M月d日 HH:mm"
+        } else {
+            f.dateFormat = "yyyy年M月d日"
+        }
         return f.string(from: date)
     }
-}
-
-struct WatchRecordingMeta: Identifiable {
-    let id = UUID()
-    let fileName: String
-    let createdAt: Date
-    let duration: TimeInterval
 }

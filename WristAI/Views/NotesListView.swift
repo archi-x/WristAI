@@ -106,10 +106,23 @@ struct NoteRow: View {
                     .lineLimit(2)
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Label(store.formatDuration(note.duration), systemImage: "clock")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+
+                Text(note.formatLabel)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(Capsule().fill(Color.accentColor.opacity(0.15)))
+
+                if let bytes = store.fileSize(for: note) {
+                    Label(AudioFileMeta.formatBytes(bytes), systemImage: "internaldrive")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
 
                 if !note.todos.isEmpty {
                     let pending = note.todos.filter { !$0.isCompleted }.count
@@ -118,9 +131,12 @@ struct NoteRow: View {
                         .foregroundStyle(pending > 0 ? .orange : .secondary)
                 }
 
-                Text(note.createdAt, format: .dateTime.month().day().hour().minute())
+                Spacer(minLength: 4)
+
+                Text(Self.formatDate(note.createdAt))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
         }
         .padding(.vertical, 4)
@@ -134,5 +150,22 @@ struct NoteRow: View {
         case .pending: return .blue
         case .notTransferred: return .gray
         }
+    }
+
+    /// Matches the watch list: 今天 HH:mm / 昨天 HH:mm / M月d日 HH:mm.
+    private static func formatDate(_ date: Date) -> String {
+        let cal = Calendar.current
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "zh_CN")
+        if cal.isDateInToday(date) {
+            f.dateFormat = "今天 HH:mm"
+        } else if cal.isDateInYesterday(date) {
+            f.dateFormat = "昨天 HH:mm"
+        } else if cal.isDate(date, equalTo: Date(), toGranularity: .year) {
+            f.dateFormat = "M月d日 HH:mm"
+        } else {
+            f.dateFormat = "yyyy年M月d日"
+        }
+        return f.string(from: date)
     }
 }

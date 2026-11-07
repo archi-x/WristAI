@@ -24,12 +24,13 @@ final class PhoneConnectivity: NSObject, WCSessionDelegate {
 
     func sessionDidBecomeInactive(_ session: WCSession) {}
 
-    func sessionWasDeactivated(_ session: WCSession) {
-        session.activate()
+    func sessionDidDeactivate(_ session: WCSession) {
+        // Re-activate for a new Apple Watch pairing.
+        WCSession.default.activate()
     }
 
     func session(_ session: WCSession, didReceive file: WCSessionFile) {
-        let metaData = file.fileTransfer.metadata ?? [:]
+        let metaData = file.metadata ?? [:]
 
         // Copy the file to a temporary location (the original is managed by the system)
         let tempDir = FileManager.default.temporaryDirectory

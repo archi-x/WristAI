@@ -2,11 +2,19 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(PhoneStore.self) private var store
+    @Environment(AuthService.self) private var auth
+    @Environment(CloudSyncService.self) private var cloud
+
     @State private var showClearConfirm = false
+    @State private var showSignOutConfirm = false
+    @State private var isSyncing = false
 
     var body: some View {
         NavigationStack {
             List {
+                accountSection
+                cloudSection
+
                 Section("转录") {
                     HStack {
                         Label("模型", systemImage: "cpu")
@@ -24,11 +32,11 @@ struct SettingsView: View {
                 }
 
                 Section("隐私") {
-                    Label("音频不上云", systemImage: "lock.fill")
+                    Label("转录在本机完成", systemImage: "lock.fill")
                         .foregroundStyle(.green)
-                    Label("转录不上云", systemImage: "lock.fill")
+                    Label("仅同步到你的 iCloud 私有库", systemImage: "icloud.fill")
                         .foregroundStyle(.green)
-                    Label("零第三方依赖", systemImage: "shield.fill")
+                    Label("开发者无法读取你的数据", systemImage: "shield.fill")
                         .foregroundStyle(.green)
                 }
 
@@ -54,7 +62,7 @@ struct SettingsView: View {
                     HStack {
                         Label("版本", systemImage: "info.circle")
                         Spacer()
-                        Text("1.0.0")
+                        Text("1.1.0")
                             .foregroundStyle(.secondary)
                     }
                     Link("WhisperKit 开源项目", destination: URL(string: "https://github.com/argmaxinc/WhisperKit")!)
@@ -74,8 +82,116 @@ struct SettingsView: View {
                 }
                 Button("取消", role: .cancel) {}
             } message: {
-                Text("这将永久删除 \(store.notes.count) 条录音及其转录，无法恢复。")
+                Text("这将永久删除 \(store.notes.count) 条录音及其转录（含 iCloud 中的副本），无法恢复。")
             }
+            .confirmationDialog(
+                "退出登录？",
+                isPresented: $showSignOutConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("退出登录", role: .destructive) {
+                    auth.signOut()
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("退出后不再同步到 iCloud，本机已有的笔记会保留。")
+            }
+        }
+    }
+
+    // MARK: - Account
+
+    private var accountSection: some View {
+        Section("账户") {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [.indigo, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 42, height: 42)
+
+                    Text(auth.profile?.initialsForBadge ?? "A")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(auth.profile?.displayName ?? "Apple 用户")
+                        .font(.body.weight(.medium))
+                    Text(auth.profile?.email ?? "已通过 Apple 登录")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.vertical, 2)
+
+            Button("退出登录", role: .destructive) {
+                showSignOutConfirm = true
+            }
+        }
+    }
+
+    // MARK: - Cloud
+
+    private var cloudSection: some View {
+        Section("iCloud 同步") {
+            HStack {
+                Label("状态", systemImage: "icloud")
+                Spacer()
+                HStack(spacing: 6) {
+                    if cloud.status.isBusy {
+                        ProgressView().controlSize(.mini)
+                    } else {
+                        Circle()
+                            .fill(statusColor)
+                            .frame(width: 8, height: 8)
+                    }
+                    Text(cloud.status.title)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Text(cloud.status.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Button {
+                Task {
+                    isSyncing = true
+                    await store.syncFromCloud()
+                    isSyncing = false
+                }
+            } label: {
+                HStack {
+                    Label("立即同步", systemImage: "arrow.triangle.2.circlepath")
+                    Spacer()
+                    if isSyncing { ProgressView().controlSize(.mini) }
+                }
+            }
+            .disabled(isSyncing || cloud.status.isBusy || !cloud.isUsable)
+
+            HStack {
+                Label("本地数据", systemImage: "internaldrive")
+                Spacer()
+                Text("\(store.notes.count) 条")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var statusColor: Color {
+        switch cloud.status {
+        case .ready:            return .green
+        case .syncing, .checking: return .orange
+        case .failed:           return .red
+        case .offline:          return .gray
+        case .idle:             return .secondary
         }
     }
 }

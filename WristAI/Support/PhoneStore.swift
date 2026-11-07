@@ -10,6 +10,9 @@ final class PhoneStore {
     var transcriptionStatus: String = ""
     private var whisperPipe: WhisperKit?
 
+    /// Cloud mirror, attached by the app once the user is signed in.
+    @ObservationIgnored private var cloud: CloudSyncService?
+
     private var recordingsDir: URL {
         let fm = FileManager.default
         let dir = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -44,6 +47,7 @@ final class PhoneStore {
         notes.insert(note, at: 0)
         saveNotes()
         lastReceivedInfo = (fileName: url.lastPathComponent, duration: duration)
+        syncUp(note)
 
         // Auto-transcribe immediately
         transcribe(note)
@@ -81,6 +85,7 @@ final class PhoneStore {
                     self.notes[idx].todos = todos
                     self.notes[idx].transcriptionStatus = .completed
                     self.saveNotes()
+                    self.syncUp(self.notes[idx])
                     self.isProcessing = false
                     self.transcriptionStatus = ""
                 }
@@ -101,7 +106,7 @@ final class PhoneStore {
     private func runWhisperKit(audioPath: String) async throws -> String {
         if whisperPipe == nil {
             transcriptionStatus = "正在加载 AI 模型（首次较慢）…"
-            whisperPipe = try await WhisperKit(model: "base", download: true, verbose: false)
+            whisperPipe = try await WhisperKit(model: "base", verbose: false, download: true)
         }
         transcriptionStatus = "正在转录音频…"
         let results: [TranscriptionResult] = try await whisperPipe!.transcribe(audioPath: audioPath)
@@ -113,7 +118,11 @@ final class PhoneStore {
         notes.removeAll { $0.id == note.id }
         let audioURL = recordingsDir.appendingPathComponent(note.fileName)
         try? FileManager.default.removeItem(at: audioURL)
+        fileSizeCache[note.fileName] = nil
         saveNotes()
+        if let cloud {
+            Task { await cloud.delete(noteID: note.id) }
+        }
     }
 
     func toggleTodo(_ todo: TodoItem, in note: VoiceNote) {
@@ -121,12 +130,35 @@ final class PhoneStore {
         if let todoIdx = notes[idx].todos.firstIndex(where: { $0.id == todo.id }) {
             notes[idx].todos[todoIdx].isCompleted.toggle()
             saveNotes()
+            syncUp(notes[idx])
         }
     }
 
     func audioURL(for note: VoiceNote) -> URL? {
         let url = recordingsDir.appendingPathComponent(note.fileName)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    /// On-disk size of a note's audio file, cached so the list doesn't stat on every redraw.
+    @ObservationIgnored private var fileSizeCache: [String: Int64] = [:]
+
+    func fileSize(for note: VoiceNote) -> Int64? {
+        if let cached = fileSizeCache[note.fileName] { return cached }
+        let url = recordingsDir.appendingPathComponent(note.fileName)
+        guard let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
+              let size = values.fileSize, size > 0 else { return nil }
+        fileSizeCache[note.fileName] = Int64(size)
+        return Int64(size)
+    }
+
+    /// `M4A · 128 KB` — falls back to the format alone when the audio is gone.
+    func fileDescription(for note: VoiceNote) -> String {
+        guard let bytes = fileSize(for: note) else { return note.formatLabel }
+        return "\(note.formatLabel) · \(AudioFileMeta.formatBytes(bytes))"
+    }
+
+    var totalAudioSize: Int64 {
+        notes.reduce(0) { $0 + (fileSize(for: $1) ?? 0) }
     }
 
     // MARK: - Persistence
@@ -140,6 +172,52 @@ final class PhoneStore {
         guard let data = try? Data(contentsOf: dataFile),
               let loaded = try? JSONDecoder().decode([VoiceNote].self, from: data) else { return }
         notes = loaded
+    }
+
+    // MARK: - Cloud Sync
+    func attachCloud(_ cloud: CloudSyncService) {
+        self.cloud = cloud
+    }
+
+    /// Push one note (metadata + audio on first upload) to iCloud.
+    private func syncUp(_ note: VoiceNote) {
+        guard let cloud else { return }
+        let url = audioURL(for: note)
+        Task { await cloud.push(note: note, audioURL: url) }
+    }
+
+    /// Pull remote notes and merge them into the local library.
+    ///
+    /// Conflict rule: a local note that already carries a transcription wins,
+    /// because re-downloading would throw away on-device ASR work. Otherwise the
+    /// remote copy replaces the local placeholder.
+    func syncFromCloud() async {
+        guard let cloud else { return }
+        let remotes = await cloud.pullAll(into: recordingsDir)
+        guard !remotes.isEmpty else { return }
+
+        var byID = Dictionary(uniqueKeysWithValues: notes.map { ($0.id, $0) })
+        for remote in remotes {
+            guard let local = byID[remote.note.id] else {
+                byID[remote.note.id] = remote.note
+                continue
+            }
+            let localHasText = !(local.transcription ?? "").isEmpty
+            let remoteHasText = !(remote.note.transcription ?? "").isEmpty
+            if !localHasText && remoteHasText {
+                byID[remote.note.id] = remote.note
+            } else if !localHasText && local.transcriptionStatus != .completed {
+                byID[remote.note.id] = remote.note
+            }
+        }
+
+        notes = byID.values.sorted { $0.createdAt > $1.createdAt }
+        saveNotes()
+    }
+
+    /// Forget the cloud mirror (used on sign-out; local data stays put).
+    func detachCloud() {
+        cloud = nil
     }
 
     // MARK: - Helpers

@@ -38,7 +38,7 @@ final class ConnectivityManager: NSObject, WCSessionDelegate {
         ]
 
         // transferFile works in background, queued until phone is available
-        session.transferFile(url, metaData: metaData)
+        session.transferFile(url, metadata: metaData)
         print("Queued recording for transfer: \(url.lastPathComponent)")
     }
 

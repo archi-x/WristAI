@@ -81,23 +81,17 @@ struct RecordingView: View {
         if store.isRecording {
             if let result = store.stopRecording() {
                 let createdAt = Date()
-                saveRecordingMeta(url: result.url, createdAt: createdAt, duration: result.duration)
+                store.registerRecording(
+                    fileName: result.url.lastPathComponent,
+                    createdAt: createdAt,
+                    duration: result.duration
+                )
                 ConnectivityManager.shared.sendRecording(url: result.url, createdAt: createdAt, duration: result.duration)
                 store.lastRecordingInfo = (fileName: result.url.lastPathComponent, duration: result.duration, transferred: false)
             }
         } else {
             store.startRecording()
         }
-    }
-
-    private func saveRecordingMeta(url: URL, createdAt: Date, duration: TimeInterval) {
-        var recordings = UserDefaults.standard.array(forKey: "watchRecordings") as? [[String: Any]] ?? []
-        recordings.append([
-            "fileName": url.lastPathComponent,
-            "createdAt": createdAt.timeIntervalSince1970,
-            "duration": duration
-        ])
-        UserDefaults.standard.set(recordings, forKey: "watchRecordings")
     }
 
     private func formatTime(_ interval: TimeInterval) -> String {

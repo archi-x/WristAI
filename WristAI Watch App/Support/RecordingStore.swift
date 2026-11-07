@@ -3,6 +3,61 @@ import AVFoundation
 import WatchKit
 import Combine
 
+/// One recording that lives on the Watch.
+///
+/// `id` is the file name so SwiftUI keeps a stable identity across reloads —
+/// using a fresh `UUID()` on every load makes `ForEach` rebuild every row.
+struct WatchRecording: Identifiable, Hashable {
+    var id: String { fileName }
+    let fileName: String
+    let createdAt: Date
+    let duration: TimeInterval
+    let fileURL: URL
+    /// Size of the audio file on disk, in bytes.
+    let fileSize: Int64
+
+    var displayDuration: String {
+        let total = Int(duration.rounded())
+        return String(format: "%02d:%02d", total / 60, total % 60)
+    }
+
+    /// Container format derived from the file extension — `M4A`, `WAV`, …
+    var formatLabel: String { AudioFileMeta.formatLabel(for: fileName) }
+
+    /// Human readable size — `128 KB`, `1.2 MB`, …
+    var displayFileSize: String { AudioFileMeta.formatBytes(fileSize) }
+}
+
+/// Small helpers shared by the watch history list.
+enum AudioFileMeta {
+    /// The recorder writes `.m4a` (AAC), but the archive may also hold
+    /// transferred files in other containers, so map by extension.
+    static func formatLabel(for fileName: String) -> String {
+        let ext = (fileName as NSString).pathExtension.lowercased()
+        switch ext {
+        case "m4a":         return "M4A"
+        case "mp3":         return "MP3"
+        case "wav", "wave": return "WAV"
+        case "aif", "aiff": return "AIFF"
+        case "caf":         return "CAF"
+        case "aac":         return "AAC"
+        case "":            return "音频"
+        default:            return ext.uppercased()
+        }
+    }
+
+    /// Binary units, matching how iOS reports storage to the user.
+    static func formatBytes(_ bytes: Int64) -> String {
+        guard bytes > 0 else { return "--" }
+        if bytes < 1024 { return "\(bytes) B" }
+        let kb = Double(bytes) / 1024
+        if kb < 1024 { return String(format: "%.0f KB", kb) }
+        let mb = kb / 1024
+        if mb < 1024 { return String(format: "%.1f MB", mb) }
+        return String(format: "%.2f GB", mb / 1024)
+    }
+}
+
 /// Manages audio recording on Apple Watch using AVAudioRecorder
 @Observable
 final class RecordingStore {
@@ -176,16 +231,114 @@ final class RecordingStore {
     func listLocalRecordings() -> [URL] {
         let fm = FileManager.default
         guard fm.fileExists(atPath: recordingsDir.path) else { return [] }
-        return (try? fm.contentsOfDirectory(at: recordingsDir, includingPropertiesForKeys: [.creationDateKey]))
-            ?.sorted { a, b in
-                (try? a.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast >
-                (try? b.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
-            } ?? []
+
+        let items = (try? fm.contentsOfDirectory(
+            at: recordingsDir,
+            includingPropertiesForKeys: [.creationDateKey, .fileSizeKey]
+        )) ?? []
+
+        return items.sorted { a, b in
+            let dateA = (try? a.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
+            let dateB = (try? b.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
+            return dateA > dateB
+        }
     }
 
     func deleteRecording(at url: URL) {
         try? FileManager.default.removeItem(at: url)
     }
 
+    // MARK: - Recording Library
+    /// Single source of truth for the history list. Always derived from the files
+    /// actually present on disk, with `UserDefaults` supplying the metadata.
+    private(set) var recordings: [WatchRecording] = []
+
+    private static let metaKey = "watchRecordings"
+
+    /// Rebuild `recordings` from the Documents/Recordings folder.
+    ///
+    /// Files on disk win: if a file exists but has no stored metadata its date
+    /// falls back to the file creation date and its duration is read from the
+    /// audio itself. Stored metadata whose file disappeared is dropped.
+    func loadRecordings() {
+        let fm = FileManager.default
+        var stored: [String: (createdAt: Date, duration: TimeInterval)] = [:]
+
+        if let raw = UserDefaults.standard.array(forKey: Self.metaKey) as? [[String: Any]] {
+            for dict in raw {
+                guard let name = dict["fileName"] as? String else { continue }
+                let created = (dict["createdAt"] as? TimeInterval)
+                    .map { Date(timeIntervalSince1970: $0) } ?? .distantPast
+                let duration = dict["duration"] as? TimeInterval ?? 0
+                stored[name] = (created, duration)
+            }
+        }
+
+        var items: [WatchRecording] = []
+        for url in listLocalRecordings() {
+            let name = url.lastPathComponent
+            let meta = stored[name]
+            let values = try? url.resourceValues(forKeys: [.creationDateKey, .fileSizeKey])
+            let fileDate = values?.creationDate ?? .distantPast
+            let duration = (meta?.duration ?? 0) > 0 ? (meta?.duration ?? 0) : Self.durationOfAudio(at: url)
+            let size = Int64(values?.fileSize ?? 0)
+
+            items.append(WatchRecording(
+                fileName: name,
+                createdAt: meta?.createdAt ?? fileDate,
+                duration: duration,
+                fileURL: url,
+                fileSize: size
+            ))
+        }
+
+        recordings = items.sorted { $0.createdAt > $1.createdAt }
+        persistMetadata()
+    }
+
+    /// Record a finished recording so it shows up in the history list.
+    func registerRecording(fileName: String, createdAt: Date, duration: TimeInterval) {
+        var raw = UserDefaults.standard.array(forKey: Self.metaKey) as? [[String: Any]] ?? []
+        raw.removeAll { ($0["fileName"] as? String) == fileName }
+        raw.append([
+            "fileName": fileName,
+            "createdAt": createdAt.timeIntervalSince1970,
+            "duration": duration
+        ])
+        UserDefaults.standard.set(raw, forKey: Self.metaKey)
+        loadRecordings()
+    }
+
+    /// Delete one recording by file name, removing both the file and its metadata.
+    func deleteRecording(named fileName: String) {
+        let url = recordingsDir.appendingPathComponent(fileName)
+        try? FileManager.default.removeItem(at: url)
+
+        var raw = UserDefaults.standard.array(forKey: Self.metaKey) as? [[String: Any]] ?? []
+        raw.removeAll { ($0["fileName"] as? String) == fileName }
+        UserDefaults.standard.set(raw, forKey: Self.metaKey)
+
+        loadRecordings()
+    }
+
+    private func persistMetadata() {
+        let raw: [[String: Any]] = recordings.map {
+            [
+                "fileName": $0.fileName,
+                "createdAt": $0.createdAt.timeIntervalSince1970,
+                "duration": $0.duration
+            ]
+        }
+        UserDefaults.standard.set(raw, forKey: Self.metaKey)
+    }
+
+    private static func durationOfAudio(at url: URL) -> TimeInterval {
+        guard let player = try? AVAudioPlayer(contentsOf: url) else { return 0 }
+        return player.duration
+    }
+
     var recordingsDirURL: URL { recordingsDir }
+
+    /// Total bytes occupied by all recordings on the watch.
+    var totalBytes: Int64 { recordings.reduce(0) { $0 + $1.fileSize } }
 }

@@ -19,3 +19,6 @@ argmax-oss-swift/
 
 # macOS
 .DS_Store
+
+# Local backups
+*.pbxproj.bak

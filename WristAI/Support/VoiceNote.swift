@@ -36,6 +36,36 @@ struct VoiceNote: Identifiable, Codable, Hashable {
         self.todos = todos
         self.title = title
     }
+
+    /// Container format derived from the file extension — `M4A`, `WAV`, …
+    var formatLabel: String { AudioFileMeta.formatLabel(for: fileName) }
+}
+
+/// Formatting helpers for audio files (kept per-target so both apps can use them).
+enum AudioFileMeta {
+    static func formatLabel(for fileName: String) -> String {
+        let ext = (fileName as NSString).pathExtension.lowercased()
+        switch ext {
+        case "m4a":         return "M4A"
+        case "mp3":         return "MP3"
+        case "wav", "wave": return "WAV"
+        case "aif", "aiff": return "AIFF"
+        case "caf":         return "CAF"
+        case "aac":         return "AAC"
+        case "":            return "音频"
+        default:            return ext.uppercased()
+        }
+    }
+
+    static func formatBytes(_ bytes: Int64) -> String {
+        guard bytes > 0 else { return "--" }
+        if bytes < 1024 { return "\(bytes) B" }
+        let kb = Double(bytes) / 1024
+        if kb < 1024 { return String(format: "%.0f KB", kb) }
+        let mb = kb / 1024
+        if mb < 1024 { return String(format: "%.1f MB", mb) }
+        return String(format: "%.2f GB", mb / 1024)
+    }
 }
 
 enum TranscriptionStatus: String, Codable {
