@@ -42,7 +42,34 @@ struct SettingsView: View {
 
                 Section("存储") {
                     HStack {
-                        Label("录音数量", systemImage: "waveform")
+                        Label("录音格式", systemImage: "waveform")
+                        Spacer()
+                        Text("M4A · AAC-LC")
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Label("音频规格", systemImage: "dial.medium")
+                        Spacer()
+                        Text("22.05 kHz · 48 kbps · 单声道")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    HStack {
+                        Label("每分钟占用", systemImage: "clock.arrow.circlepath")
+                        Spacer()
+                        Text("约 390 KB")
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Label("已用空间", systemImage: "internaldrive")
+                        Spacer()
+                        Text(AudioFileMeta.formatBytes(store.totalAudioSize))
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Label("录音数量", systemImage: "list.bullet")
                         Spacer()
                         Text("\(store.notes.count)")
                             .foregroundStyle(.secondary)
@@ -62,7 +89,7 @@ struct SettingsView: View {
                     HStack {
                         Label("版本", systemImage: "info.circle")
                         Spacer()
-                        Text("1.1.0")
+                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
                             .foregroundStyle(.secondary)
                     }
                     Link("WhisperKit 开源项目", destination: URL(string: "https://github.com/argmaxinc/WhisperKit")!)
