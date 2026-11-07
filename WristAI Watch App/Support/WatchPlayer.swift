@@ -18,6 +18,9 @@ final class WatchPlayer: NSObject, AVAudioPlayerDelegate {
     private(set) var progress: Double = 0
     private(set) var currentTime: TimeInterval = 0
     private(set) var duration: TimeInterval = 0
+    /// True while the user drags the progress bar. The UI uses it to keep the
+    /// knob under the finger even if the ticker reports a slightly older time.
+    private(set) var isScrubbing = false
     /// Non-nil when the file is missing or the decoder refused to open it.
     private(set) var errorMessage: String?
 
@@ -25,6 +28,8 @@ final class WatchPlayer: NSObject, AVAudioPlayerDelegate {
     @ObservationIgnored private var player: AVAudioPlayer?
     @ObservationIgnored private var ticker: Timer?
     @ObservationIgnored private let session = AVAudioSession.sharedInstance()
+    /// Whether playback was running when the scrub began, so it can be restored.
+    @ObservationIgnored private var resumeAfterScrub = false
 
     // MARK: - Public API
 
@@ -119,6 +124,44 @@ final class WatchPlayer: NSObject, AVAudioPlayerDelegate {
         stop()
     }
 
+    // MARK: - Scrubbing
+
+    /// Grab the playhead for a drag: remember whether audio was moving, then
+    /// stop it so seeking doesn't fight the decoder (and so the ticker stops
+    /// overwriting `currentTime` mid-drag).
+    func beginScrubbing() {
+        guard player != nil else { return }
+        guard !isScrubbing else { return }
+        isScrubbing = true
+        resumeAfterScrub = isPlaying
+        if isPlaying { pause() }
+    }
+
+    /// Release the playhead. Resumes only if it was playing when the drag began.
+    func endScrubbing() {
+        guard isScrubbing else { return }
+        isScrubbing = false
+        let shouldResume = resumeAfterScrub
+        resumeAfterScrub = false
+        if shouldResume { resume() }
+    }
+
+    /// Move the playhead to `fraction` (0...1) of the loaded item.
+    ///
+    /// Clamped, so a drag past either end lands exactly on the start/end.
+    /// Works while paused, which is how a finished item can be rewound.
+    func scrub(toFraction fraction: Double) {
+        guard let player else { return }
+        let total = player.duration
+        guard total > 0 else { return }
+
+        let target = min(max(0, fraction), 1) * total
+        player.currentTime = target
+        currentTime = target
+        duration = total
+        progress = target / total
+    }
+
     // MARK: - AVAudioPlayerDelegate
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
@@ -149,6 +192,8 @@ final class WatchPlayer: NSObject, AVAudioPlayerDelegate {
 
     private func resetState() {
         isPlaying = false
+        isScrubbing = false
+        resumeAfterScrub = false
         progress = 0
         currentTime = 0
         duration = 0
